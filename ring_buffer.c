@@ -1,7 +1,8 @@
-
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "sensor.h"
+#include "cli.h"
 
 #define BUFFER_SIZE 16
 
@@ -55,7 +56,7 @@ int main() {
         rb_push(&rb, i);
     }
 
-    // This push should fail — buffer is full
+    // This push should fail - buffer is full
     bool result = rb_push(&rb, 99);
     printf("Push when full: %s\n", result ? "succeeded" : "failed (correct)");
 
@@ -66,9 +67,31 @@ int main() {
         printf("Popped: %d\n", out);
     }
 
-    // This pop should fail — buffer is empty
+    // This pop should fail - buffer is empty
     result = rb_pop(&rb, &out);
     printf("Pop when empty: %s\n", result ? "succeeded" : "failed (correct)");
+
+    // ---- PHASE 2 STARTS HERE ----
+
+    // Test multiple sensor readings
+    printf("\n--- Sensor Readings ---\n");
+    for (uint8_t i = 1; i <= 3; i++) {
+        SensorData_t sensor;
+        sensor_read(&sensor, i);
+        printf("Sensor %d: Temp=%.1fC, Humidity=%.1f%%\n",
+               sensor.id, sensor.temperature, sensor.humidity);
+    }
+
+    // Test multiple commands
+    printf("\n--- Available Commands ---\n");
+    Command_t commands[3] = {
+        {"led", "Turn LED on or off"},
+        {"sensor", "Read sensor values"},
+        {"help", "List all commands"}
+    };
+    for (int i = 0; i < 3; i++) {
+        printf("%s - %s\n", commands[i].name, commands[i].description);
+    }
 
     return 0;
 }
