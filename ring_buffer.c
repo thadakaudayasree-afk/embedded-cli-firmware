@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include "sensor.h"
 #include "cli.h"
 
@@ -47,6 +48,22 @@ bool rb_pop(RingBuffer_t *rb, uint8_t *byte_out) {
     return true;
 }
 
+// ---- PHASE 3: Command handler functions ----
+
+void led_on(char *args) {
+    printf("[GPIO] LED: ON\n");
+}
+
+void led_off(char *args) {
+    printf("[GPIO] LED: OFF\n");
+}
+
+void read_sensor(char *args) {
+    SensorData_t sensor;
+    sensor_read(&sensor, 1);
+    printf("[SENSOR] Temp=%.1fC, Humidity=%.1f%%\n", sensor.temperature, sensor.humidity);
+}
+
 int main() {
     RingBuffer_t rb;
     rb_init(&rb);
@@ -71,9 +88,8 @@ int main() {
     result = rb_pop(&rb, &out);
     printf("Pop when empty: %s\n", result ? "succeeded" : "failed (correct)");
 
-    // ---- PHASE 2 STARTS HERE ----
+    // ---- PHASE 2: Structs ----
 
-    // Test multiple sensor readings
     printf("\n--- Sensor Readings ---\n");
     for (uint8_t i = 1; i <= 3; i++) {
         SensorData_t sensor;
@@ -82,15 +98,44 @@ int main() {
                sensor.id, sensor.temperature, sensor.humidity);
     }
 
-    // Test multiple commands
-    printf("\n--- Available Commands ---\n");
+    // ---- PHASE 3: Function pointer CLI dispatcher ----
+
     Command_t commands[3] = {
-        {"led", "Turn LED on or off"},
-        {"sensor", "Read sensor values"},
-        {"help", "List all commands"}
+        {"led_on", "Turn LED on", led_on},
+        {"led_off", "Turn LED off", led_off},
+        {"sensor", "Read sensor values", read_sensor}
     };
+
+    char *user_input = "led_on";  // pretend the user typed this
+
+    printf("\n--- CLI Dispatcher Test ---\n");
+    printf("User typed: %s\n", user_input);
+
+    int found = 0;
     for (int i = 0; i < 3; i++) {
-        printf("%s - %s\n", commands[i].name, commands[i].description);
+        if (strcmp(commands[i].name, user_input) == 0) {
+            commands[i].handler(NULL);
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        printf("Unknown command\n");
+    }
+
+    // Try a second command too
+    user_input = "sensor";
+    printf("\nUser typed: %s\n", user_input);
+    found = 0;
+    for (int i = 0; i < 3; i++) {
+        if (strcmp(commands[i].name, user_input) == 0) {
+            commands[i].handler(NULL);
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        printf("Unknown command\n");
     }
 
     return 0;
